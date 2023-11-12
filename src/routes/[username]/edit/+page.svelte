@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import SortableList from "$lib/components/SortableList.svelte";
   import UserLink from "$lib/components/UserLink.svelte";
   import { db, userData, user } from "$lib/firebase";
   import {
@@ -34,7 +35,6 @@
   $: titleIsValid = $formData.title.length < 20 && $formData.title.length > 0;
   $: formIsValid = urlIsValid && titleIsValid;
 
-
   async function addLink(e: SubmitEvent) {
     const userRef = doc(db, "users", $user!.uid);
 
@@ -54,7 +54,6 @@
     showForm = false;
   }
 
-
   async function deleteLink(item: any) {
     const userRef = doc(db, "users", $user!.uid);
     await updateDoc(userRef, {
@@ -67,6 +66,11 @@
     showForm = false;
   }
 
+  function sortList(e: CustomEvent) {
+    const newList = e.detail;
+    const userRef = doc(db, "users", $user!.uid);
+    setDoc(userRef, { links: newList }, { merge: true });
+  }
 </script>
 
 <main class="max-w-xl mx-auto">
@@ -75,7 +79,16 @@
       Edit your Profile
     </h1>
 
-    <!-- INSERT sortable list here -->
+    <SortableList list={$userData?.links} on:sort={sortList} let:item let:index>
+      <div class="group relative">
+        <UserLink {...item} />
+        <button
+          on:click={() => deleteLink(item)}
+          class="btn btn-xs btn-error invisible group-hover:visible transition-all absolute -right-6 bottom-10"
+          >Delete</button
+        >
+      </div>
+    </SortableList>
 
     {#if showForm}
       <form
@@ -87,7 +100,6 @@
           class="select select-sm"
           bind:value={$formData.icon}
         >
-
           {#each icons as icon}
             <option value={icon.toLowerCase()}>{icon}</option>
           {/each}
@@ -124,7 +136,9 @@
           class="btn btn-success block">Add Link</button
         >
 
-        <button type="button" class="btn btn-xs my-4" on:click={cancelLink}>Cancel</button>
+        <button type="button" class="btn btn-xs my-4" on:click={cancelLink}
+          >Cancel</button
+        >
       </form>
     {:else}
       <button
